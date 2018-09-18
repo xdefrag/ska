@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
-	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -50,7 +49,7 @@ func ParseValues(valuesFilePath string) (Values, error) {
 }
 
 func genTempFile(path string) (string, error) {
-	temp := os.TempDir() + uuid.Must(uuid.NewV4()).String() + filepath.Ext(path)
+	temp := ".temp-" + filepath.Base(path) + filepath.Ext(path)
 	err := os.Link(path, temp)
 
 	return temp, err
