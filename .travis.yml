@@ -4,15 +4,11 @@ go:
   - 1.11.x
 
 env:
-  - GO111MODULE=on
-  - CODECOV_TOKEN="8b910685-b9b2-4a49-8d8a-80ecad9a77d5"
+  - GO111MODULE=on CODECOV_TOKEN="8b910685-b9b2-4a49-8d8a-80ecad9a77d5"
 
 install: true
 
 go_import_path: github.com/xdefrag/ska
-
-before_install:
-  - go get -t -v ./...
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
