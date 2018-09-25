@@ -23,18 +23,12 @@ func GenerateTemplates(tmpldir, saveto string, vv Values) error {
 			return errors.Wrapf(err, "Failed to create directory %s", savetofile)
 		}
 
-		t := template.New(filepath.Base(path))
-		t, err = t.ParseFiles(path)
+		buf, err := templateExecute(path, vv)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to parse template %s", path)
-		}
-
-		buf := bytes.NewBuffer([]byte(""))
-		if err = t.Execute(buf, vv); err != nil {
 			return errors.Wrapf(err, "Failed to execute template %s", path)
 		}
 
-		if err = ioutil.WriteFile(savetofile, buf.Bytes(), 0755); err != nil {
+		if err = writeFile(savetofile, buf.Bytes()); err != nil {
 			return errors.Wrapf(err, "Failed to write file %s", savetofile)
 		}
 
@@ -42,7 +36,7 @@ func GenerateTemplates(tmpldir, saveto string, vv Values) error {
 	})
 }
 
-func ensureDirForFile(path string) error {
+var ensureDirForFile = func(path string) error {
 	baseDir := filepath.Dir(path)
 	_, err := os.Stat(baseDir)
 	if err != nil && !os.IsNotExist(err) {
@@ -50,4 +44,21 @@ func ensureDirForFile(path string) error {
 	}
 
 	return os.MkdirAll(baseDir, 0755)
+}
+
+var templateExecute = func(path string, vv Values) (buf *bytes.Buffer, err error) {
+	buf = bytes.NewBuffer([]byte(""))
+
+	t, err := template.New(filepath.Base(path)).ParseFiles(path)
+	if err != nil {
+		return
+	}
+
+	err = t.Execute(buf, vv)
+
+	return
+}
+
+var writeFile = func(path string, data []byte) error {
+	return ioutil.WriteFile(path, data, 0755)
 }

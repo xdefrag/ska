@@ -2,7 +2,9 @@ package ska
 
 import (
 	"bytes"
+	"html/template"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -15,6 +17,7 @@ func TestGenerateTemplates(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Testdata examples tests
 	for _, ex := range exs {
 
 		valuefile := tdRaw + ex.Name() + string(filepath.Separator) + "values.toml"
@@ -32,6 +35,47 @@ func TestGenerateTemplates(t *testing.T) {
 		}
 
 		check(t, ex.Name())
+	}
+
+	// Error tests
+	errCases := []struct {
+		name string
+		pre  func()
+	}{
+		{
+			name: "Create dir error",
+			pre: func() {
+				ensureDirForFile = func(path string) error {
+					return os.ErrNotExist
+				}
+			},
+		},
+		{
+			name: "Template execute error",
+			pre: func() {
+				templateExecute = func(path string, vv Values) (*bytes.Buffer, error) {
+					return nil, &template.Error{}
+				}
+			},
+		},
+		{
+			name: "Write file error",
+			pre: func() {
+				writeFile = func(path string, data []byte) error {
+					return os.ErrExist
+				}
+			},
+		},
+	}
+
+	for _, c := range errCases {
+		t.Run(c.name, func(t *testing.T) {
+			c.pre()
+
+			if err = GenerateTemplates(tdRaw, tdTemp, Values{}); err == nil {
+				t.Error("Error expected")
+			}
+		})
 	}
 }
 
