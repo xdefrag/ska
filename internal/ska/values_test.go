@@ -50,7 +50,11 @@ func TestParseValues(t *testing.T) {
 		{
 			name: "genTempFile returns error",
 			pre: func() {
+				restore := genTempFile
+
 				genTempFile = func(path string) (string, error) {
+					genTempFile = restore
+
 					return "", &os.LinkError{}
 				}
 			},
@@ -58,7 +62,11 @@ func TestParseValues(t *testing.T) {
 		{
 			name: "Toml decoder return error",
 			pre: func() {
+				restore := decodeFile
+
 				decodeFile = func(p string, v interface{}) error {
+					decodeFile = restore
+
 					return &os.PathError{}
 				}
 			},

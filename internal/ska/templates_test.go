@@ -45,7 +45,11 @@ func TestGenerateTemplates(t *testing.T) {
 		{
 			name: "Create dir error",
 			pre: func() {
+				restore := ensureDirForFile
+
 				ensureDirForFile = func(path string) error {
+					ensureDirForFile = restore
+
 					return os.ErrNotExist
 				}
 			},
@@ -53,7 +57,11 @@ func TestGenerateTemplates(t *testing.T) {
 		{
 			name: "Template execute error",
 			pre: func() {
+				restore := templateExecute
+
 				templateExecute = func(path string, vv Values) (*bytes.Buffer, error) {
+					templateExecute = restore
+
 					return nil, &template.Error{}
 				}
 			},
@@ -61,7 +69,11 @@ func TestGenerateTemplates(t *testing.T) {
 		{
 			name: "Write file error",
 			pre: func() {
+				restore := writeFile
+
 				writeFile = func(path string, data []byte) error {
+					writeFile = restore
+
 					return os.ErrExist
 				}
 			},
@@ -74,6 +86,8 @@ func TestGenerateTemplates(t *testing.T) {
 
 			if err = GenerateTemplates(tdRaw, tdTemp, Values{}); err == nil {
 				t.Error("Error expected")
+			} else {
+				println(err.Error())
 			}
 		})
 	}

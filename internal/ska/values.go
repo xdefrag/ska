@@ -33,8 +33,8 @@ func ParseValues(valuesFilePath string) (Values, error) {
 
 	for {
 		invokeEditor(temp)
-		decodeFile(temp, &vv)
-		if err == nil {
+
+		if err = decodeFile(temp, &vv); err == nil {
 			break
 		}
 
