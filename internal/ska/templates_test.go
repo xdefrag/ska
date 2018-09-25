@@ -43,6 +43,18 @@ func TestGenerateTemplates(t *testing.T) {
 		pre  func()
 	}{
 		{
+			name: "Template dir doesn't exists error",
+			pre: func() {
+				restore := stat
+
+				stat = func(path string) error {
+					stat = restore
+
+					return os.ErrNotExist
+				}
+			},
+		},
+		{
 			name: "Create dir error",
 			pre: func() {
 				restore := ensureDirForFile
@@ -86,8 +98,6 @@ func TestGenerateTemplates(t *testing.T) {
 
 			if err = GenerateTemplates(tdRaw, tdTemp, Values{}); err == nil {
 				t.Error("Error expected")
-			} else {
-				println(err.Error())
 			}
 		})
 	}
