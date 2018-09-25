@@ -13,6 +13,10 @@ import (
 
 // GenerateTemplates from tmpldir to saveto with vv.
 func GenerateTemplates(tmpldir, saveto string, vv Values) error {
+	if err := stat(tmpldir); err != nil {
+		return errors.Wrapf(err, "Templates dir doesn't exist: %s", tmpldir)
+	}
+
 	return filepath.Walk(tmpldir, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
@@ -34,6 +38,12 @@ func GenerateTemplates(tmpldir, saveto string, vv Values) error {
 
 		return nil
 	})
+}
+
+var stat = func(path string) error {
+	_, err := os.Stat(path)
+
+	return err
 }
 
 var ensureDirForFile = func(path string) error {
