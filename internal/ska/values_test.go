@@ -2,6 +2,7 @@ package ska
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -15,26 +16,72 @@ func TestParseValues(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Testdata examples tests
 	for _, ex := range exs {
 		if !ex.IsDir() {
 			continue
 		}
 
-		valuefile := tdRaw + ex.Name() + string(filepath.Separator) + "values.toml"
+		t.Run(ex.Name(), func(t *testing.T) {
+			valuefile := tdRaw + ex.Name() + string(filepath.Separator) + "values.toml"
 
-		got, err := ParseValues(valuefile)
-		if err != nil {
-			t.Fatal(err)
-		}
+			got, err := ParseValues(valuefile)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		var want Values
-		_, err = toml.DecodeFile(valuefile, &want)
-		if err != nil {
-			t.Fatal(err)
-		}
+			var want Values
+			_, err = toml.DecodeFile(valuefile, &want)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("got: %v, want: %v", got, want)
-		}
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("got: %v, want: %v", got, want)
+			}
+		})
+	}
+
+	// Error tests
+	errCases := []struct {
+		name string
+		pre  func()
+	}{
+		{
+			name: "genTempFile returns error",
+			pre: func() {
+				restore := genTempFile
+
+				genTempFile = func(path string) (string, error) {
+					genTempFile = restore
+
+					return "", &os.LinkError{}
+				}
+			},
+		},
+		{
+			name: "Toml decoder return error",
+			pre: func() {
+				restore := decodeFile
+
+				decodeFile = func(p string, v interface{}) error {
+					decodeFile = restore
+
+					return &os.PathError{}
+				}
+			},
+		},
+	}
+
+	for _, c := range errCases {
+		t.Run(c.name, func(t *testing.T) {
+			c.pre()
+
+			_, err := ParseValues("")
+
+			if err == nil {
+				t.Errorf("Error expected")
+			}
+		})
 	}
 }

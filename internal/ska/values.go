@@ -33,8 +33,8 @@ func ParseValues(valuesFilePath string) (Values, error) {
 
 	for {
 		invokeEditor(temp)
-		_, err = toml.DecodeFile(temp, &vv)
-		if err == nil {
+
+		if err = decodeFile(temp, &vv); err == nil {
 			break
 		}
 
@@ -48,11 +48,17 @@ func ParseValues(valuesFilePath string) (Values, error) {
 	return vv, nil
 }
 
-func genTempFile(path string) (string, error) {
+var genTempFile = func(path string) (string, error) {
 	temp := ".temp-" + filepath.Base(path) + filepath.Ext(path)
 	err := os.Link(path, temp)
 
 	return temp, err
+}
+
+var decodeFile = func(p string, v interface{}) error {
+	_, err := toml.DecodeFile(p, v)
+
+	return err
 }
 
 var invokeEditor = func(path string) error {
