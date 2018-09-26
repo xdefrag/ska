@@ -49,7 +49,7 @@ func ParseValues(valuesFilePath string) (Values, error) {
 }
 
 var genTempFile = func(path string) (string, error) {
-	temp := ".temp-" + filepath.Base(path) + filepath.Ext(path)
+	temp := ".temp-" + filepath.Base(path)
 	err := os.Link(path, temp)
 
 	return temp, err
