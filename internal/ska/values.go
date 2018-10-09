@@ -14,6 +14,14 @@ import (
 var (
 	// Editor that will be invoked with invokeEditor func.
 	Editor = os.Getenv("EDITOR")
+
+	// Out for messages
+	Out = os.Stdout
+
+	msgSynErr = `Syntax error:
+%#v
+
+Press ENTER to continue fix errors in values file or <C-c> to exit`
 )
 
 // Values type
@@ -38,10 +46,7 @@ func ParseValues(valuesFilePath string) (Values, error) {
 			break
 		}
 
-		fmt.Println("Syntax error:")
-		fmt.Println(err)
-		fmt.Println()
-		fmt.Println("Press ENTER to continue fix errors in values file or <C-c> to exit")
+		fmt.Fprintf(Out, msgSynErr, err)
 		bufio.NewScanner(os.Stdin).Scan()
 	}
 
