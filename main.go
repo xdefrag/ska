@@ -29,9 +29,9 @@ func main() {
 	must(err)
 
 	if isdir {
-		must(walk(in, out, vals, genAndWriteTpl))
+		must(walk(in, out, vals, gen))
 	} else {
-		must(genAndWriteTpl(in, out, vals))
+		must(gen(in, out, vals))
 	}
 }
 
@@ -69,7 +69,7 @@ func walk(in, out string, vals map[string]interface{}, f func(in, out string, va
 	})
 }
 
-func genAndWriteTpl(in, out string, vals map[string]interface{}) error {
+func gen(in, out string, vals map[string]interface{}) error {
 	t, err := template.New(filepath.Base(in)).Funcs(sprig.FuncMap()).ParseFiles(in)
 	if err != nil {
 		return err
