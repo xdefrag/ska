@@ -4,8 +4,15 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"testing"
 )
+
+func TestMain(m *testing.M) {
+	must(os.RemoveAll("out"))
+
+	os.Exit(m.Run())
+}
 
 // TODO make it auto.
 func TestCompile(t *testing.T) {

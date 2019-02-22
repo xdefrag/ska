@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"html/template"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -17,6 +19,7 @@ import (
 func main() {
 	var ska string
 	var out string
+	var editor string
 
 	var cmd = &cobra.Command{
 		Use:   "ska [template]",
@@ -25,15 +28,33 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			vp, tp := tplPaths(ska, args[0])
 
-			vals, err := vals(vp)
+			var vv map[string]interface{}
+
+			tmp, err := tempfile(vp)
 			must(err)
 
-			must(walk(tp, out, vals, gen))
+			s := bufio.NewScanner(os.Stdin)
+
+			for {
+				must(invokeEditor(editor, tmp))
+
+				vv, err = vals(tmp)
+
+				if !(err != nil) {
+					break
+				}
+
+				fmt.Printf("Error while parsing file: %v\n", err)
+				s.Scan()
+			}
+
+			must(walk(tp, out, vv, gen))
 		},
 	}
 
 	cmd.PersistentFlags().StringVarP(&ska, "templates", "t", "~/.local/share/ska", "Templates dir")
 	cmd.PersistentFlags().StringVarP(&out, "output", "o", ".", "Output")
+	cmd.PersistentFlags().StringVarP(&editor, "editor", "e", os.Getenv("EDITOR"), "Editor")
 
 	must(cmd.Execute())
 }
@@ -85,6 +106,22 @@ func gen(in, out string, vals map[string]interface{}) error {
 
 func mkdirr(path string) error {
 	return os.MkdirAll(path, 0755)
+}
+
+func tempfile(p string) (string, error) {
+	tmp := ".temp-" + filepath.Base(p)
+	err := os.Link(p, tmp)
+
+	return tmp, err
+}
+
+func invokeEditor(ed, p string) error {
+	cmd := exec.Command(ed, p)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
 }
 
 func must(err error) {
