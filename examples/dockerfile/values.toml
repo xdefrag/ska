@@ -1,0 +1,5 @@
+svc = "example"
+
+addons = ["certs"]
+
+expose = ["metrics"]

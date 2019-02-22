@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -12,27 +11,37 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/Masterminds/sprig"
+	"github.com/spf13/cobra"
 )
 
+var ska string
+var out string
+
+var cmd = &cobra.Command{
+	Use:   "ska [template]",
+	Short: "Render template",
+	Args:  cobra.MinimumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		vp, tp := tplPaths(ska, args[0])
+
+		vals, err := vals(vp)
+		must(err)
+
+		must(walk(tp, out, vals, gen))
+	},
+}
+
 func main() {
-	fileVal := flag.String("values", "./values.toml", "Files with values for template")
-	fileTpl := flag.String("template", "./template.tpl", "Template file or dir")
-	fileOutput := flag.String("output", "./output", "Output")
+	cmd.PersistentFlags().StringVarP(&ska, "templates", "t", "~/.local/share/ska", "Templates dir")
+	cmd.PersistentFlags().StringVarP(&out, "output", "o", ".", "Output")
 
-	flag.Parse()
+	must(cmd.Execute())
+}
 
-	in, out := *fileTpl, *fileOutput
-	vals, err := vals(*fileVal)
-	must(err)
+func tplPaths(ska, tpl string) (vp, tp string) {
+	tplf := fmt.Sprintf("%s/%s", ska, tpl)
 
-	isdir, err := isDir(*fileTpl)
-	must(err)
-
-	if isdir {
-		must(walk(in, out, vals, gen))
-	} else {
-		must(gen(in, out, vals))
-	}
+	return fmt.Sprintf("%s/values.toml", tplf), fmt.Sprintf("%s/templates", tplf)
 }
 
 func vals(path string) (map[string]interface{}, error) {
@@ -42,15 +51,6 @@ func vals(path string) (map[string]interface{}, error) {
 	}
 
 	return vals, nil
-}
-
-func isDir(path string) (bool, error) {
-	f, err := os.Stat(path)
-	if err != nil {
-		return false, err
-	}
-
-	return f.IsDir(), nil
 }
 
 func walk(in, out string, vals map[string]interface{}, f func(in, out string, vals map[string]interface{}) error) error {
