@@ -14,24 +14,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var ska string
-var out string
-
-var cmd = &cobra.Command{
-	Use:   "ska [template]",
-	Short: "Render template",
-	Args:  cobra.MinimumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		vp, tp := tplPaths(ska, args[0])
-
-		vals, err := vals(vp)
-		must(err)
-
-		must(walk(tp, out, vals, gen))
-	},
-}
-
 func main() {
+	var ska string
+	var out string
+
+	var cmd = &cobra.Command{
+		Use:   "ska [template]",
+		Short: "Render template",
+		Args:  cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			vp, tp := tplPaths(ska, args[0])
+
+			vals, err := vals(vp)
+			must(err)
+
+			must(walk(tp, out, vals, gen))
+		},
+	}
+
 	cmd.PersistentFlags().StringVarP(&ska, "templates", "t", "~/.local/share/ska", "Templates dir")
 	cmd.PersistentFlags().StringVarP(&out, "output", "o", ".", "Output")
 
