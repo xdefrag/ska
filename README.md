@@ -7,7 +7,7 @@ SKA
 Templates powered by [go template](https://golang.org/pkg/html/template/) package and has this structure:
 ````
 .
-+--~/.ska
++--~/.local/share/ska
 |  +--your_template
 |  |  +--values.toml   // Values for templates
 |  |  +--templates     // Actual templates
@@ -19,12 +19,11 @@ Templates powered by [go template](https://golang.org/pkg/html/template/) packag
 
 ## Usage
 ````sh
-$ ska your_template ./your_project_folder
+$ ska your_template
 ````
-$EDITOR will be opened with values.toml copy. After you save and quit templates will be recursively executed and copied to specified folder.
+$EDITOR will be opened with values.toml copy. After you save and quit templates will be recursively executed and copied to current folder.
 
 ## Install
 ````sh
-$ go get -u https://github.com/xdefrag/ska
-$ cd $GOPATH/src/github.com/xdefrag/ska && make install
+$ go install https://github.com/xdefrag/ska
 ````

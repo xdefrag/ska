@@ -56,9 +56,9 @@ func main() {
 		},
 	}
 
-	cmd.PersistentFlags().StringVarP(&ska, "templates", "t", "~/.local/share/ska", "Templates dir")
-	cmd.PersistentFlags().StringVarP(&out, "output", "o", ".", "Output")
-	cmd.PersistentFlags().StringVarP(&editor, "editor", "e", os.Getenv("EDITOR"), "Editor")
+	cmd.PersistentFlags().StringVarP(&ska, "templates", "t", "~/.local/share/ska", "templates dir")
+	cmd.PersistentFlags().StringVarP(&out, "output", "o", ".", "output")
+	cmd.PersistentFlags().StringVarP(&editor, "editor", "e", os.Getenv("EDITOR"), "editor")
 
 	must(cmd.Execute())
 }
