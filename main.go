@@ -48,6 +48,10 @@ func main() {
 				s.Scan()
 			}
 
+			if err := os.RemoveAll(tmp); err != nil {
+				fmt.Fprintf(os.Stderr, "%v", err)
+			}
+
 			must(walk(tp, out, vv, gen))
 		},
 	}
