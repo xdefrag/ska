@@ -56,7 +56,14 @@ func main() {
 		},
 	}
 
-	cmd.PersistentFlags().StringVarP(&ska, "templates", "t", "~/.local/share/ska", "templates dir")
+	skadef, err := os.UserHomeDir()
+	if err != nil {
+		skadef = "/usr/local/share/ska"
+	} else {
+		skadef = fmt.Sprintf("%s/.local/share/ska", skadef)
+	}
+
+	cmd.PersistentFlags().StringVarP(&ska, "templates", "t", skadef, "templates dir")
 	cmd.PersistentFlags().StringVarP(&out, "output", "o", ".", "output")
 	cmd.PersistentFlags().StringVarP(&editor, "editor", "e", os.Getenv("EDITOR"), "editor")
 
@@ -113,8 +120,16 @@ func mkdirr(path string) error {
 }
 
 func tempfile(p string) (string, error) {
-	tmp := ".temp-" + filepath.Base(p)
-	err := os.Link(p, tmp)
+	tmp := fmt.Sprintf("%s.temp-%s", os.TempDir(), filepath.Base(p))
+	pabs, err := filepath.Abs(p)
+
+	if err != nil {
+		return "", err
+	}
+
+	if err := os.Link(pabs, tmp); err != nil {
+		return "", err
+	}
 
 	return tmp, err
 }
