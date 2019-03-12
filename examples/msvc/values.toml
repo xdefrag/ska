@@ -1,0 +1,16 @@
+adapters = ["redis", "postgresql"]
+
+[redis]
+[redis.defaults]
+host = "0.0.0.0"
+port = "6439"
+password = "pass"
+database = 1
+
+[postgresql]
+[postgresql.defaults]
+host = "0.0.0.0"
+port = "5432"
+username = "testing"
+password = "testing"
+database = "testing"

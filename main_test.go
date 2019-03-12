@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -14,27 +16,56 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-// TODO make it auto.
-func TestCompile(t *testing.T) {
-	t.Run("dockerfile", func(t *testing.T) {
-		ska := "examples"
-		tpl := "dockerfile"
-		out := "out/dockerfile"
+func TestExamples(t *testing.T) {
+	const (
+		ska      = "examples"
+		out      = "out"
+		testdata = "testdata"
+	)
 
-		vp, tp := tplPaths(ska, tpl)
+	dirs, err := ioutil.ReadDir(ska)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		vals, err := vals(vp)
-		must(err)
+	for _, dir := range dirs {
+		t.Run(dir.Name(), func(t *testing.T) {
+			vp, tp := tplPaths(ska, dir.Name())
 
-		must(walk(tp, out, vals, gen))
+			vals, err := vals(vp)
+			must(err)
 
-		outfile := fmt.Sprintf("%s/Dockerfile", out)
-		golden := "testdata/dockerfile/Dockerfile"
+			must(walk(tp, concpath(out, dir.Name()), vals, gen))
 
-		if !isSame(t, outfile, golden) {
+			if err := filepath.Walk(
+				concpath(out, dir.Name()),
+				compare(t, testdata, dir.Name()),
+			); err != nil {
+				t.Error(err)
+			}
+		})
+	}
+}
+
+func compare(t *testing.T, tddir, tpldir string) func(string, os.FileInfo, error) error {
+	return func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+
+		golden := strings.Replace(
+			path,
+			concpath("out", tpldir),
+			concpath(tddir, tpldir),
+			-1,
+		)
+
+		if !isSame(t, path, golden) {
 			t.Fatal("Compiled and golden files not the same")
 		}
-	})
+
+		return nil
+	}
 }
 
 func isSame(t *testing.T, f1, f2 string) bool {
@@ -49,4 +80,8 @@ func isSame(t *testing.T, f1, f2 string) bool {
 	}
 
 	return bytes.Compare(b1, b2) == 0
+}
+
+func concpath(p1, p2 string) string {
+	return fmt.Sprintf("%s/%s", p1, p2)
 }
