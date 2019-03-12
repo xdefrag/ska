@@ -120,7 +120,7 @@ func mkdirr(path string) error {
 }
 
 func tempfile(p string) (string, error) {
-	tmp := fmt.Sprintf("%s.temp-%s", os.TempDir(), filepath.Base(p))
+	tmp := fmt.Sprintf("%s/temp-%s", os.TempDir(), filepath.Base(p))
 	pabs, err := filepath.Abs(p)
 
 	if err != nil {
