@@ -93,6 +93,14 @@ func walk(in, out string, vals map[string]interface{}, f func(in, out string, va
 
 		saveto := out + string(filepath.Separator) + strings.Replace(path, in, "", -1)
 
+		// if the filepath itself has templating, run it
+		if strings.Contains(saveto, "{{") {
+			saveto, err = genPath(saveto, vals)
+			if err != nil {
+				return err
+			}
+		}
+
 		if err := mkdirr(filepath.Dir(saveto)); err != nil {
 			return err
 		}
@@ -113,6 +121,21 @@ func gen(in, out string, vals map[string]interface{}) error {
 	}
 
 	return ioutil.WriteFile(out, buf.Bytes(), 0644)
+}
+
+// Generate a templated filename, rendering templated file/pathnames as needed
+func genPath(path string, vals map[string]interface{}) (string, error) {
+	t, err := template.New(path).Funcs(sprig.FuncMap()).Parse(path)
+	if err != nil {
+		return "", err
+	}
+
+	buf := bytes.NewBuffer([]byte(""))
+	if err := t.Execute(buf, vals); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }
 
 func mkdirr(path string) error {
