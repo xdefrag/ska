@@ -2,9 +2,9 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -13,63 +13,62 @@ import (
 func TestMain(m *testing.M) {
 	must(os.RemoveAll("out"))
 
-	os.Exit(m.Run())
+	st := m.Run()
+
+	must(os.RemoveAll("out"))
+
+	os.Exit(st)
 }
 
-func TestCompile(t *testing.T) {
-	tests := map[string]struct {
-		path string
-	}{
-		"a basic file with templated contents": {
-			path: "dockerfile",
-		},
-		"templated directory and filenames": {
-			path: "filenames",
-		},
+func TestExamples(t *testing.T) {
+	const (
+		ska      = "examples"
+		out      = "out"
+		testdata = "testdata"
+	)
+
+	dirs, err := ioutil.ReadDir(ska)
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	for msg, test := range tests {
-		t.Run(msg, func(t *testing.T) {
-			ska := "examples"
-			tpl := test.path
-			goldenDir := path.Join("testdata", test.path)
-			outDir := path.Join("out", test.path)
+	for _, dir := range dirs {
+		t.Run(dir.Name(), func(t *testing.T) {
+			vp, tp := tplPaths(ska, dir.Name())
 
-			vp, tp := tplPaths(ska, tpl)
 			vals, err := vals(vp)
 			must(err)
-			must(walk(tp, outDir, vals, gen))
 
-			err = filepath.Walk(goldenDir, func(goldenPath string, goldenInfo os.FileInfo, err error) error {
-				if err != nil {
-					return err
-				}
+			must(walk(tp, concpath(out, dir.Name()), vals, gen))
 
-				outPath := path.Join("out", strings.TrimPrefix(goldenPath, "testdata"))
-
-				if goldenInfo.IsDir() {
-					outInfo, err := os.Stat(outPath)
-					if err != nil {
-						t.Fatalf("Error for expected output directory %s: %v", outPath, err)
-					}
-					if !outInfo.IsDir() {
-						t.Fatalf("Found file not directory for expected output directory %s", outPath)
-					}
-				} else {
-					if !hasSameContents(t, outPath, goldenPath) {
-						t.Fatalf("Compiled and golden files %s vs %s not the same", outPath, goldenPath)
-					}
-				}
-
-				return nil
-			})
-
-			if err != nil {
-				t.Fatal(err)
+			if err := filepath.Walk(
+				concpath(out, dir.Name()),
+				compare(t, testdata, dir.Name()),
+			); err != nil {
+				t.Error(err)
 			}
-			os.RemoveAll(outDir)
-
 		})
+	}
+}
+
+func compare(t *testing.T, tddir, tpldir string) func(string, os.FileInfo, error) error {
+	return func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+
+		golden := strings.Replace(
+			path,
+			concpath("out", tpldir),
+			concpath(tddir, tpldir),
+			-1,
+		)
+
+		if !hasSameContents(t, path, golden) {
+			t.Fatal("Compiled and golden files not the same")
+		}
+
+		return nil
 	}
 }
 
@@ -84,5 +83,9 @@ func hasSameContents(t *testing.T, f1, f2 string) bool {
 		t.Fatal(err)
 	}
 
-	return bytes.Compare(b1, b2) == 0
+	return bytes.Equal(b1, b2)
+}
+
+func concpath(p1, p2 string) string {
+	return fmt.Sprintf("%s/%s", p1, p2)
 }

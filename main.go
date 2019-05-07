@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -70,12 +71,14 @@ func main() {
 	must(cmd.Execute())
 }
 
+// tplPaths returns values.toml path (vp) and templates dir path (tp).
 func tplPaths(ska, tpl string) (vp, tp string) {
 	tplf := fmt.Sprintf("%s/%s", ska, tpl)
 
 	return fmt.Sprintf("%s/values.toml", tplf), fmt.Sprintf("%s/templates", tplf)
 }
 
+// vals decodes path and return map of values with error.
 func vals(path string) (map[string]interface{}, error) {
 	var vals map[string]interface{}
 	if _, err := toml.DecodeFile(path, &vals); err != nil {
@@ -85,21 +88,24 @@ func vals(path string) (map[string]interface{}, error) {
 	return vals, nil
 }
 
+// walk walks through in dirs, parses filenames witg vals, generates files with f functions and vals values.
 func walk(in, out string, vals map[string]interface{}, f func(in, out string, vals map[string]interface{}) error) error {
 	return filepath.Walk(in, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
 		if info.IsDir() {
 			return nil
 		}
 
-		saveto := out + string(filepath.Separator) + strings.Replace(path, in, "", -1)
+		file, err := prepareFilepath(path, vals)
+		if err != nil {
+			return err
 
-		// if the filepath itself has templating, run it
-		if strings.Contains(saveto, "{{") {
-			saveto, err = genPath(saveto, vals)
-			if err != nil {
-				return err
-			}
 		}
+
+		saveto := out + string(filepath.Separator) + strings.Replace(file, in, "", -1)
 
 		if err := mkdirr(filepath.Dir(saveto)); err != nil {
 			return err
@@ -109,6 +115,7 @@ func walk(in, out string, vals map[string]interface{}, f func(in, out string, va
 	})
 }
 
+// gen generates files with in templates on out path with vals values.
 func gen(in, out string, vals map[string]interface{}) error {
 	t, err := template.New(filepath.Base(in)).Funcs(sprig.FuncMap()).ParseFiles(in)
 	if err != nil {
@@ -123,25 +130,37 @@ func gen(in, out string, vals map[string]interface{}) error {
 	return ioutil.WriteFile(out, buf.Bytes(), 0644)
 }
 
-// Generate a templated filename, rendering templated file/pathnames as needed
-func genPath(path string, vals map[string]interface{}) (string, error) {
-	t, err := template.New(path).Funcs(sprig.FuncMap()).Parse(path)
-	if err != nil {
-		return "", err
+// prepareFilepath generate filepath with vals values, removes ".ska" extention if any.
+func prepareFilepath(path string, vals map[string]interface{}) (string, error) {
+	// if the filepath itself has templating, run it
+	if strings.Contains(path, "{{") {
+		t, err := template.New(path).Funcs(sprig.FuncMap()).Parse(path)
+		if err != nil {
+			return "", err
+		}
+
+		buf := bytes.NewBuffer([]byte(""))
+		if err := t.Execute(buf, vals); err != nil {
+			return "", err
+		}
+
+		path = buf.String()
 	}
 
-	buf := bytes.NewBuffer([]byte(""))
-	if err := t.Execute(buf, vals); err != nil {
-		return "", err
+	// if filepath has ".ska" ext, remove it.
+	if path[len(path)-4:] == ".ska" {
+		path = path[0 : len(path)-4]
 	}
 
-	return buf.String(), nil
+	return path, nil
 }
 
+// mkdirr recursivelly creates directories.
 func mkdirr(path string) error {
 	return os.MkdirAll(path, 0755)
 }
 
+// tempfile creates tempfiles in os.TempDir.
 func tempfile(p string) (string, error) {
 	tmp := fmt.Sprintf("%s/temp-%s", os.TempDir(), filepath.Base(p))
 	pabs, err := filepath.Abs(p)
@@ -157,6 +176,7 @@ func tempfile(p string) (string, error) {
 	return tmp, err
 }
 
+// invokeEditor invokes $EDITOR and pass stdin/stdout/stderr in it.
 func invokeEditor(ed, p string) error {
 	cmd := exec.Command(ed, p)
 	cmd.Stdin = os.Stdin
@@ -166,9 +186,11 @@ func invokeEditor(ed, p string) error {
 	return cmd.Run()
 }
 
+// must checks error and exit program if any.
 func must(err error) {
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		_, file, line, _ := runtime.Caller(1)
+		fmt.Fprintf(os.Stderr, "%s:%d: %v\n", filepath.Base(file), line, err)
 		os.Exit(-1)
 	}
 }
