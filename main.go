@@ -32,25 +32,31 @@ func main() {
 			var vv map[string]interface{}
 
 			tmp, err := tempfile(vp)
-			must(err)
 
-			s := bufio.NewScanner(os.Stdin)
+			// if there is no errors with tempfile = invoke editor to edit it.
+			if !(err != nil) {
+				s := bufio.NewScanner(os.Stdin)
 
-			for {
-				must(invokeEditor(editor, tmp))
+				for {
+					must(invokeEditor(editor, tmp))
 
-				vv, err = vals(tmp)
+					vv, err = vals(tmp)
 
-				if !(err != nil) {
-					break
+					if !(err != nil) {
+						break
+					}
+
+					fmt.Printf("Error while parsing file: %v\n", err)
+					s.Scan()
 				}
 
-				fmt.Printf("Error while parsing file: %v\n", err)
-				s.Scan()
+				if err := os.RemoveAll(tmp); err != nil {
+					fmt.Fprintf(os.Stderr, "%v", err)
+				}
 			}
 
-			if err := os.RemoveAll(tmp); err != nil {
-				fmt.Fprintf(os.Stderr, "%v", err)
+			if err != nil && !os.IsNotExist(err) {
+				must(err)
 			}
 
 			must(walk(tp, out, vv, gen))
@@ -81,6 +87,7 @@ func tplPaths(ska, tpl string) (vp, tp string) {
 // vals decodes path and return map of values with error.
 func vals(path string) (map[string]interface{}, error) {
 	var vals map[string]interface{}
+
 	if _, err := toml.DecodeFile(path, &vals); err != nil {
 		return nil, err
 	}
