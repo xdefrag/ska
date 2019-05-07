@@ -13,7 +13,11 @@ import (
 func TestMain(m *testing.M) {
 	must(os.RemoveAll("out"))
 
-	os.Exit(m.Run())
+	st := m.Run()
+
+	must(os.RemoveAll("out"))
+
+	os.Exit(st)
 }
 
 func TestExamples(t *testing.T) {
@@ -60,7 +64,7 @@ func compare(t *testing.T, tddir, tpldir string) func(string, os.FileInfo, error
 			-1,
 		)
 
-		if !isSame(t, path, golden) {
+		if !hasSameContents(t, path, golden) {
 			t.Fatal("Compiled and golden files not the same")
 		}
 
@@ -68,7 +72,7 @@ func compare(t *testing.T, tddir, tpldir string) func(string, os.FileInfo, error
 	}
 }
 
-func isSame(t *testing.T, f1, f2 string) bool {
+func hasSameContents(t *testing.T, f1, f2 string) bool {
 	b1, err := ioutil.ReadFile(f1)
 	if err != nil {
 		t.Fatal(err)
@@ -79,7 +83,7 @@ func isSame(t *testing.T, f1, f2 string) bool {
 		t.Fatal(err)
 	}
 
-	return bytes.Compare(b1, b2) == 0
+	return bytes.Equal(b1, b2)
 }
 
 func concpath(p1, p2 string) string {
