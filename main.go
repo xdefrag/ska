@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -21,6 +22,7 @@ func main() {
 	var ska string
 	var out string
 	var editor string
+	log.SetFlags(0)
 
 	var cmd = &cobra.Command{
 		Use:   "ska [template]",
@@ -185,6 +187,10 @@ func tempfile(p string) (string, error) {
 
 // invokeEditor invokes $EDITOR and pass stdin/stdout/stderr in it.
 func invokeEditor(ed, p string) error {
+	if ed == "" {
+		log.Printf("WARNING: The $EDITOR environment variable has not been set, assuming /usr/bin/vim")
+		ed = "/usr/bin/vim"
+	}
 	cmd := exec.Command(ed, p)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
