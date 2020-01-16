@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -173,12 +174,22 @@ func mkdirr(path string) error {
 func tempfile(p string) (string, error) {
 	tmp := fmt.Sprintf("%s/temp-%s", os.TempDir(), filepath.Base(p))
 	pabs, err := filepath.Abs(p)
-
 	if err != nil {
 		return "", err
 	}
 
-	if err := os.Link(pabs, tmp); err != nil {
+	in, err := os.Open(pabs)
+	if err != nil {
+		return "", err
+	}
+
+	out, err := os.Create(tmp)
+	if err != nil {
+		return "", err
+	}
+	defer out.Close()
+
+	if _, err := io.Copy(out, in); err != nil {
 		return "", err
 	}
 
