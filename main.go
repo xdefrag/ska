@@ -31,6 +31,10 @@ func main() {
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			vp, tp := tplPaths(ska, args[0])
+			out, err := filepath.Abs(out)
+			if err != nil {
+				must(err)
+			}
 
 			var vv map[string]interface{}
 
@@ -112,7 +116,11 @@ func walk(in, out string, vals map[string]interface{}, f func(in, out string, va
 		file, err := prepareFilepath(path, vals)
 		if err != nil {
 			return err
+		}
 
+		in, err = filepath.Abs(in)
+		if err != nil {
+			return err
 		}
 
 		saveto := out + string(filepath.Separator) + strings.Replace(file, in, "", -1)
@@ -142,6 +150,11 @@ func gen(in, out string, vals map[string]interface{}) error {
 
 // prepareFilepath generate filepath with vals values, removes ".ska" extention if any.
 func prepareFilepath(path string, vals map[string]interface{}) (string, error) {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+
 	// if the filepath itself has templating, run it
 	if strings.Contains(path, "{{") {
 		t, err := template.New(path).Funcs(sprig.FuncMap()).Parse(path)
