@@ -145,7 +145,26 @@ func gen(in, out string, vals map[string]interface{}) error {
 		return err
 	}
 
-	return ioutil.WriteFile(out, buf.Bytes(), 0644)
+	wd, _ := os.Getwd()
+	rel, _ := filepath.Rel(wd, out)
+	if rel == "" {
+		rel = out
+	}
+
+	if _, err := os.Stat(out); err == nil {
+		log.Printf("\texists: %v", rel)
+	} else if os.IsNotExist(err) {
+		err = ioutil.WriteFile(out, buf.Bytes(), 0644)
+		if err != nil {
+			return err
+		}
+
+		log.Printf("\tcreated: %v", rel)
+	} else {
+
+	}
+
+	return nil
 }
 
 // prepareFilepath generate filepath with vals values, removes ".ska" extention if any.
