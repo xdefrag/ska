@@ -20,9 +20,12 @@ import (
 )
 
 func main() {
-	var ska string
-	var out string
-	var editor string
+	var (
+		ska    string
+		out    string
+		editor string
+	)
+
 	log.SetFlags(0)
 
 	var cmd = &cobra.Command{
@@ -103,7 +106,8 @@ func vals(path string) (map[string]interface{}, error) {
 }
 
 // walk walks through in dirs, parses filenames witg vals, generates files with f functions and vals values.
-func walk(in, out string, vals map[string]interface{}, f func(in, out string, vals map[string]interface{}) error) error {
+func walk(in, out string, vals map[string]interface{},
+	f func(in, out string, vals map[string]interface{}) error) error {
 	return filepath.Walk(in, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -146,28 +150,30 @@ func gen(in, out string, vals map[string]interface{}) error {
 	}
 
 	wd, _ := os.Getwd()
+
 	rel, _ := filepath.Rel(wd, out)
 	if rel == "" {
 		rel = out
 	}
 
-	if _, err := os.Stat(out); err == nil {
+	_, err = os.Stat(out)
+
+	switch {
+	case !(err != nil):
 		log.Printf("\texists: %v", rel)
-	} else if os.IsNotExist(err) {
-		err = ioutil.WriteFile(out, buf.Bytes(), 0644)
-		if err != nil {
+	case os.IsNotExist(err):
+		if err := ioutil.WriteFile(out, buf.Bytes(), 0644); err != nil {
 			return err
 		}
 
 		log.Printf("\tcreated: %v", rel)
-	} else {
-
+	default:
 	}
 
 	return nil
 }
 
-// prepareFilepath generate filepath with vals values, removes ".ska" extention if any.
+// prepareFilepath generate filepath with vals values, removes ".ska" extension if any.
 func prepareFilepath(path string, vals map[string]interface{}) (string, error) {
 	path, err := filepath.Abs(path)
 	if err != nil {
@@ -205,6 +211,7 @@ func mkdirr(path string) error {
 // tempfile creates tempfiles in os.TempDir.
 func tempfile(p string) (string, error) {
 	tmp := fmt.Sprintf("%s/temp-%s", os.TempDir(), filepath.Base(p))
+
 	pabs, err := filepath.Abs(p)
 	if err != nil {
 		return "", err
@@ -232,8 +239,10 @@ func tempfile(p string) (string, error) {
 func invokeEditor(ed, p string) error {
 	if ed == "" {
 		log.Printf("WARNING: The $EDITOR environment variable has not been set, assuming /usr/bin/vim")
+
 		ed = "/usr/bin/vim"
 	}
+
 	cmd := exec.Command(ed, p)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout

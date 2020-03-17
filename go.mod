@@ -1,5 +1,7 @@
 module github.com/xdefrag/ska
 
+go 1.14
+
 require (
 	github.com/BurntSushi/toml v0.3.0
 	github.com/Masterminds/goutils v1.1.0 // indirect
