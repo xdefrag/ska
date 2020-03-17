@@ -99,6 +99,19 @@ $ ska your_template
 $EDITOR will be opened with values.toml copy. After you save and quit templates will be recursively executed and copied to current folder.  
 SKA will work out of the box with any console editor (vim, emacs), for others such as vscode or atom [see this comment](https://github.com/xdefrag/ska/issues/27#issuecomment-500422334).
 
+````sh
+Usage:
+  ska [template] [flags]
+
+Flags:
+  -d, --default-values     use default values
+  -e, --editor string      editor (default "vim")
+  -h, --help               help for ska
+  -o, --output string      output (default ".")
+  -t, --templates string   templates dir (default "/Users/xdefrag/.local/share/ska")
+  -v, --values string      values path
+````
+
 ## Install
 ````sh
 $ go install https://github.com/xdefrag/ska
