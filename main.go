@@ -20,71 +20,104 @@ import (
 )
 
 func main() {
-	var (
-		ska    string
-		out    string
-		editor string
-	)
-
 	log.SetFlags(0)
 
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "ska [template]",
 		Short: "Render template",
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			vp, tp := tplPaths(ska, args[0])
-			out, err := filepath.Abs(out)
-			if err != nil {
-				must(err)
-			}
-
-			var vv map[string]interface{}
-
-			tmp, err := tempfile(vp)
-
-			// if there is no errors with tempfile = invoke editor to edit it.
-			if !(err != nil) {
-				s := bufio.NewScanner(os.Stdin)
-
-				for {
-					must(invokeEditor(editor, tmp))
-
-					vv, err = vals(tmp)
-
-					if !(err != nil) {
-						break
-					}
-
-					fmt.Printf("Error while parsing file: %v\n", err)
-					s.Scan()
-				}
-
-				if err := os.RemoveAll(tmp); err != nil {
-					fmt.Fprintf(os.Stderr, "%v", err)
-				}
-			}
-
-			if err != nil && !os.IsNotExist(err) {
-				must(err)
-			}
-
-			must(walk(tp, out, vv, gen))
-		},
+		Run:   run,
 	}
 
-	skadef, err := os.UserHomeDir()
-	if err != nil {
-		skadef = "/usr/local/share/ska"
-	} else {
-		skadef = fmt.Sprintf("%s/.local/share/ska", skadef)
-	}
-
-	cmd.PersistentFlags().StringVarP(&ska, "templates", "t", skadef, "templates dir")
-	cmd.PersistentFlags().StringVarP(&out, "output", "o", ".", "output")
-	cmd.PersistentFlags().StringVarP(&editor, "editor", "e", os.Getenv("EDITOR"), "editor")
+	setUpFlags(cmd)
 
 	must(cmd.Execute())
+}
+
+// setUpFlags prepares command with flags.
+func setUpFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().StringP("templates", "t", templatePathDefault(), "templates dir")
+	cmd.PersistentFlags().StringP("output", "o", ".", "output")
+	cmd.PersistentFlags().StringP("editor", "e", os.Getenv("EDITOR"), "editor")
+	cmd.PersistentFlags().BoolP("default-values", "d", false, "use default values")
+}
+
+// run runs ska scenario.
+func run(cmd *cobra.Command, args []string) {
+	var (
+		ska           = cmd.Flag("templates").Value.String()
+		out           = cmd.Flag("output").Value.String()
+		editor        = cmd.Flag("editor").Value.String()
+		defaultValues = cmd.Flag("default-values").Value.String()
+	)
+
+	valuePath, templatesPath := tplPaths(ska, args[0])
+
+	out, err := filepath.Abs(out)
+	if err != nil {
+		must(err)
+	}
+
+	var values map[string]interface{}
+
+	switch {
+	case defaultValues == "true":
+		values = readDefaultValues(valuePath)
+	default:
+		values = readValuesFromTempFile(valuePath, editor)
+	}
+
+	if err != nil && !os.IsNotExist(err) {
+		must(err)
+	}
+
+	must(walk(templatesPath, out, values, gen))
+}
+
+// readDefaultValues reads values from default template values.
+func readDefaultValues(valuePath string) map[string]interface{} {
+	valuePath, _ = filepath.Abs(valuePath)
+
+	values, err := vals(valuePath)
+	if err != nil {
+		log.Fatalf("Error while parsing default values: %v", err)
+	}
+
+	return values
+}
+
+// readValuesFromTempFile creates tempfile, starts editor, waits for stdout control
+// and parse values.
+func readValuesFromTempFile(valuePath, editor string) map[string]interface{} {
+	tmp, err := tempfile(valuePath)
+	if err != nil {
+		log.Fatalf("Error while creating temp value file: %v", err)
+	}
+
+	s := bufio.NewScanner(os.Stdin)
+
+	var values map[string]interface{}
+
+	for {
+		must(invokeEditor(editor, tmp))
+
+		var err error
+
+		values, err = vals(tmp)
+
+		if !(err != nil) {
+			break
+		}
+
+		fmt.Printf("Error while parsing file: %v\n", err)
+		s.Scan()
+	}
+
+	if err := os.RemoveAll(tmp); err != nil {
+		fmt.Fprintf(os.Stderr, "%v", err)
+	}
+
+	return values
 }
 
 // tplPaths returns values.toml path (vp) and templates dir path (tp).
@@ -249,6 +282,18 @@ func invokeEditor(ed, p string) error {
 	cmd.Stderr = os.Stderr
 
 	return cmd.Run()
+}
+
+// templatePathDefault returns default ska templates folder.
+func templatePathDefault() string {
+	skadef, err := os.UserHomeDir()
+	if err != nil {
+		skadef = "/usr/local/share/ska"
+	} else {
+		skadef = fmt.Sprintf("%s/.local/share/ska", skadef)
+	}
+
+	return skadef
 }
 
 // must checks error and exit program if any.

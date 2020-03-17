@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
 func TestMain(m *testing.M) {
@@ -34,12 +36,15 @@ func TestExamples(t *testing.T) {
 
 	for _, dir := range dirs {
 		t.Run(dir.Name(), func(t *testing.T) {
-			vp, tp := tplPaths(ska, dir.Name())
+			cmd := &cobra.Command{}
 
-			vals, err := vals(vp)
-			must(err)
+			setUpFlags(cmd)
 
-			must(walk(tp, concpath(out, dir.Name()), vals, gen))
+			tmust(t, cmd.PersistentFlags().Set("templates", ska))
+			tmust(t, cmd.PersistentFlags().Set("output", concpath(out, dir.Name())))
+			tmust(t, cmd.PersistentFlags().Set("default-values", "true"))
+
+			run(cmd, []string{dir.Name()})
 
 			if err := filepath.Walk(
 				concpath(out, dir.Name()),
@@ -88,4 +93,10 @@ func hasSameContents(t *testing.T, f1, f2 string) bool {
 
 func concpath(p1, p2 string) string {
 	return fmt.Sprintf("%s/%s", p1, p2)
+}
+
+func tmust(t *testing.T, err error) {
+	if err != nil {
+		t.Fatal(err)
+	}
 }
