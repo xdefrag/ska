@@ -1,0 +1,6 @@
+{{if len .ports}}
+ports:
+{{range $port := .ports}}
+- {{$port}}
+{{end}}
+{{end}}
