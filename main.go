@@ -39,16 +39,18 @@ func setUpFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringP("templates", "t", templatePathDefault(), "templates dir")
 	cmd.PersistentFlags().StringP("output", "o", ".", "output")
 	cmd.PersistentFlags().StringP("editor", "e", os.Getenv("EDITOR"), "editor")
+	cmd.PersistentFlags().StringP("values", "v", "", "values path")
 	cmd.PersistentFlags().BoolP("default-values", "d", false, "use default values")
 }
 
 // run runs ska scenario.
 func run(cmd *cobra.Command, args []string) {
 	var (
-		ska           = cmd.Flag("templates").Value.String()
-		out           = cmd.Flag("output").Value.String()
-		editor        = cmd.Flag("editor").Value.String()
-		defaultValues = cmd.Flag("default-values").Value.String()
+		ska                = cmd.Flag("templates").Value.String()
+		out                = cmd.Flag("output").Value.String()
+		editor             = cmd.Flag("editor").Value.String()
+		externalValuesPath = cmd.Flag("values").Value.String()
+		defaultValues      = cmd.Flag("default-values").Value.String()
 	)
 
 	valuePath, templatesPath := tplPaths(ska, args[0])
@@ -62,7 +64,9 @@ func run(cmd *cobra.Command, args []string) {
 
 	switch {
 	case defaultValues == "true":
-		values = readDefaultValues(valuePath)
+		values = readValuesFromPath(valuePath)
+	case externalValuesPath != "":
+		values = readValuesFromPath(externalValuesPath)
 	default:
 		values = readValuesFromTempFile(valuePath, editor)
 	}
@@ -74,8 +78,7 @@ func run(cmd *cobra.Command, args []string) {
 	must(walk(templatesPath, out, values, gen))
 }
 
-// readDefaultValues reads values from default template values.
-func readDefaultValues(valuePath string) map[string]interface{} {
+func readValuesFromPath(valuePath string) map[string]interface{} {
 	valuePath, _ = filepath.Abs(valuePath)
 
 	values, err := vals(valuePath)
