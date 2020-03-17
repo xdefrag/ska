@@ -83,6 +83,14 @@ func hasSameContents(t *testing.T, f1, f2 string) bool {
 		t.Fatal(err)
 	}
 
+	// if file is empty = nothing need to generate.
+	if len(b1) == 1 {
+		_, err = os.Stat(f2)
+		if os.IsNotExist(err) {
+			return true
+		}
+	}
+
 	b2, err := ioutil.ReadFile(f2)
 	if err != nil {
 		t.Fatal(err)

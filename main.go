@@ -182,6 +182,10 @@ func gen(in, out string, vals map[string]interface{}) error {
 		return err
 	}
 
+	if buf.Len() == 0 {
+		return nil
+	}
+
 	wd, _ := os.Getwd()
 
 	rel, _ := filepath.Rel(wd, out)
