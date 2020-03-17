@@ -1,0 +1,26 @@
+name: ci
+
+on: [push]
+
+jobs:
+  lint:
+    runs-on: [ubuntu-latest]
+    container: golangci/golangci-lint:v1.21.0
+    steps:
+      - uses: actions/checkout@v1
+      - name: Linter
+        run: golangci-lint run
+  test:
+    runs-on: [ubuntu-latest]
+    container: 
+      image: golang:latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Tests
+        run: |
+          go mod download
+          go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+      - name: Code coverage
+        env: 
+          CODECOV_TOKEN: "8b910685-b9b2-4a49-8d8a-80ecad9a77d5"
+        run: curl -s https://codecov.io/bash | bash
