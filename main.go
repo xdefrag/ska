@@ -16,6 +16,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/Masterminds/sprig"
+	"github.com/google/shlex"
 	"github.com/spf13/cobra"
 )
 
@@ -283,7 +284,13 @@ func invokeEditor(ed, p string) error {
 		ed = "/usr/bin/vim"
 	}
 
-	cmd := exec.Command(ed, p)
+	parts, err := shlex.Split(ed)
+	if err != nil {
+		return fmt.Errorf("$EDITOR command could not be parsed (%s): %w", ed, err)
+	}
+	parts = append(parts, p)
+
+	cmd := exec.Command(parts[0], parts[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
