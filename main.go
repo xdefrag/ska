@@ -164,7 +164,7 @@ func walk(in, out string, vals map[string]interface{},
 			return err
 		}
 
-		saveto := out + string(filepath.Separator) + strings.Replace(file, in, "", -1)
+		saveto := out + string(filepath.Separator) + strings.ReplaceAll(file, in, "")
 
 		if err := mkdirr(filepath.Dir(saveto)); err != nil {
 			return err
@@ -203,7 +203,7 @@ func gen(in, out string, vals map[string]interface{}) error {
 	case !(err != nil):
 		log.Printf("\texists: %v", rel)
 	case os.IsNotExist(err):
-		if err := ioutil.WriteFile(out, buf.Bytes(), 0644); err != nil {
+		if err := ioutil.WriteFile(out, buf.Bytes(), 0600); err != nil {
 			return err
 		}
 
@@ -288,6 +288,7 @@ func invokeEditor(ed, p string) error {
 	if err != nil {
 		return fmt.Errorf("$EDITOR command could not be parsed (%s): %w", ed, err)
 	}
+
 	parts = append(parts, p)
 
 	cmd := exec.Command(parts[0], parts[1:]...)
