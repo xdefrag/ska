@@ -13,6 +13,7 @@ buildGoModule rec {
   nativeBuildInputs = [ installShellFiles ];
 
   postInstall = ''
-    installShellCompletion --zsh completions/zsh/_ska
+    installShellCompletion --zsh completions/ska.zsh
+    installShellCompletion --fish completions/ska.fish
   '';
 }
