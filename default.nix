@@ -15,5 +15,8 @@ buildGoModule rec {
   postInstall = ''
     installShellCompletion --zsh completions/ska.zsh
     installShellCompletion --fish completions/ska.fish
+
+    mkdir $out/share/man/
+    cp $src/man/ska.1 $out/share/man/
   '';
 }
