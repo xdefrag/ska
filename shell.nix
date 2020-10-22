@@ -5,5 +5,6 @@ pkgs.mkShell {
     go
     goimports
     golangci-lint
+    groff
   ];
 }

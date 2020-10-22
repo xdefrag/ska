@@ -1,0 +1,38 @@
+.TH ska(1)
+
+.SH NAME
+.B ska
+- simple scaffolding tool.
+
+.SH SYNPOSIS
+.B ska
+[-dh]
+[-e editor]
+[-o output]
+[-t templates_dir]
+[-v values_file]
+
+.SH OPTIONS
+.TP
+.B -d --default-values
+Use default values without invoking editor.
+
+.TP
+.B -h --help
+Prints help.
+
+.TP
+.B -e --editor
+Editor for editing values. Defaults to "vim".
+
+.TP
+.B -o --output
+Dir for outputing compiled files. Defaults to current directory.
+
+.TP
+.B -t --templates
+Templates dir. Defaults to $HOME/.local/share/ska
+
+.TP
+.B -v --values
+Path for predifined values for templates.
