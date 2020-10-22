@@ -27,6 +27,9 @@ issues:
     - linters:
         - gomnd
       source: "os.exit"
+    - linters:
+        - gosec
+      text: "G204"
 
 
 linters-settings:
